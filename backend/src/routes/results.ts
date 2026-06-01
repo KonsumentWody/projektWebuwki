@@ -11,10 +11,8 @@ router.get('/:season/:round', async (req: Request, res: Response, next: NextFunc
       res.status(400).json({ error: 'Invalid season or round' });
       return;
     }
-    const [results, qualifying] = await Promise.all([
-      getRaceResults(season, round),
-      getQualifyingResults(season, round),
-    ]);
+    const results = await getRaceResults(season, round);
+    const qualifying = await getQualifyingResults(season, round);
     res.json({ season, round, results, qualifying });
   } catch (err) {
     next(err);
