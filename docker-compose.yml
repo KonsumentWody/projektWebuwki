@@ -1,25 +1,33 @@
-server {
-    listen 80;
+services:
 
-    root /usr/share/nginx/html;
-    index index.html;
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      PORT: "3001"
+      DB_DIR: "/data"
+      CORS_ORIGIN: "http://localhost:8080"
+      NODE_ENV: "production"
+    volumes:
+      - f1_data:/data
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
-    # Proxy API requests to the backend service
-    location /api/ {
-        proxy_pass http://backend:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_read_timeout 30s;
-    }
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
 
-    # Health check passthrough
-    location /health {
-        proxy_pass http://backend:3001/health;
-    }
-
-    # React SPA – fallback all routes to index.html
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-}
+volumes:
+  f1_data:
